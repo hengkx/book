@@ -6,25 +6,13 @@ Github Actions 是一种全新的自动化开发工作流程的方法。
 
 在没有使用 Github Actions 我部署程序是这样的。
 
-```flow
-open=>start: 执行命令打包
-upload=>operation: 打开 sftp 软件把打包好的文件上传到服务器上
-processes=>operation: ssh 进入服务指定目录
-stop=>operation: 停止服务
-install=>operation: 安装依赖
-end=>end: 启动服务
-open->upload->processes->stop->install->end
-```
+![之前](images/before.png)
 
 ![我太难了](images/1.jpg)
 
 使用 Github Actions 后。
 
-```flow
-open=>start: 提交代码
-end=>end: 自动部署完成了
-open->end
-```
+![之后](images/after.png)
 
 ## 为什么要自己写一个 Github Actions
 
