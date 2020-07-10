@@ -14,7 +14,7 @@ CI/CD 是由很多操作组成的(如：执行单元测试、语法检查、打�
 
 ## Github Actions 的核心概念
 
-![action](image/../images/action.png)
+![action](images/action.png)
 
 ### 操作（Action）
 
