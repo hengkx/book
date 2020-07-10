@@ -1,6 +1,70 @@
-# 使用 JS 开发 Github Actions 实现自动部署到自己服务器
+# 使用 JS 开发 Github Actions 实现自动部署前后台项目到自己服务器
 
-Github Actions 是一种全新的自动化开发工作流程的方法。
+不想看前面这么多废话的可以直接跳到[具体实现](#开始动手了)
+
+## Github Actions 是什么？
+
+说到 Github Actions 不得不提一下。
+
+- **持续集成**（continuous integration）：高质量的让产品快速迭代
+- **持续交付**（continuous delivery）：交付给团队测试
+- **持续部署**（continuous deployment）：持续交付的下一步核心概念团队测试完成后自动部署到生产环境
+
+CI/CD 是由很多操作组成的(如：执行单元测试、语法检查、打包、部署等等)。Github 把这些操作称为`action`，不同的项目很多的操作都是类似，Github 把这些操作整合成了一个[市场](https://github.com/marketplace?type=actions)允许大家发布或使用别人写好的`action`。
+
+## Github Actions 的核心概念
+
+![action](image/../images/action.png)
+
+### 操作（Action）
+
+- `action`是工作流中最小的可移植模块
+- 可以创建属于自己的`action`，使用 Github 社区提供的`action`以及自定义公开的`action`
+- 在工作流中使用需要将其作为`steps`包含
+- 使用是 用户名/仓储名/版本(或分支) 如：`actions/checkout@master`
+
+### 事件（Event）
+
+- 触发工作流运行的特定事件
+- Github 本身事件`提交`、`创建问题`、`PR`等
+- 使用 webhook 配置发生在外部的事件
+
+[具体事件请参阅](https://docs.github.com/en/actions/reference/events-that-trigger-workflows)
+
+### GitHub-hosted runner
+
+| 虚拟主机环境         | YAML 工作流标签                    |
+| -------------------- | ---------------------------------- |
+| Windows Server 2019  | `windows-latest` or `windows-2019` |
+| Ubuntu 20.04         | `ubuntu-20.04`                     |
+| Ubuntu 18.04         | `ubuntu-latest` or `ubuntu-18.04`  |
+| Ubuntu 16.04         | `ubuntu-16.04`                     |
+| macOS Catalina 10.15 | `macos-latest` or `macos-10.15`    |
+
+### 作业（Job）
+
+- 在同一个运行程序上执行的一组步骤。
+- 可以为作业在工作流文件中的运行方式定义依赖关系规则。
+- 作业可以同时并行运行，也可以按顺序运行，具体取决于前一个作业的状态。例如，一个工作流可以有两个连续的作业来生成和测试代码，其中测试作业取决于生成作业的状态。如果生成作业失败，测试作业将不会运行。
+- 对于 GitHub 托管的运行程序，工作流中的每个作业都在虚拟环境的新实例中运行。
+
+[具体作业详细配置请参阅](https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobs)
+
+### 步骤（Step）
+
+- 步骤是可以运行命令或操作的单个任务。
+- 一个作业可配置**一个**或**多个**步骤。
+- 作业中的每个步骤都在同一个运行器上执行，从而允许该作业中的操作使用**文件系统共享信息**。
+
+### 工作流（Workflow）
+
+- 可配置的自动化过程。测试、打包、发布或部署等等。
+- 工作流由**一个**或**多个**作业组成，可以通过事件计划或激活。
+
+### 工作流配置文件（Workflow file）
+
+- 所有需要执行的工作流都必须放在 GitHub 存储库的根目录下的`.gitHub/workflows` 目录中。
+- 需要使用`YAML`文件配置并以`.yml`后缀结尾
 
 ## 我为什么要使用 Github Actions
 
@@ -9,6 +73,8 @@ Github Actions 是一种全新的自动化开发工作流程的方法。
 ![之前](images/before.png)
 
 ![我太难了](images/1.jpg)
+
+## 如何使用？
 
 使用 Github Actions 后。
 
@@ -118,7 +184,7 @@ export async function run() {
     const src = core.getInput('SOURCE');
     const dst = core.getInput('TARGET');
     const afterCommand = core.getInput('AFTER_COMMAND');
-
+    // 下面为ssh链接服务器上传文件并执行命令
     const conn = new Client();
 
     conn.on('ready', async () => {
@@ -149,17 +215,17 @@ export async function run() {
 ```yml
 name: Deploy
 
-on:
+on: # 在master分支上提交代码执行
   push:
     branches: [master]
 
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
+jobs: # 作业
+  build-and-deploy: # 作业名称
+    runs-on: ubuntu-latest # 运行的环境
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@master
+    steps: #步骤
+      - name: Checkout # 步骤名
+        uses: actions/checkout@master # 所使用的action
 
       - name: Setup Node.js environment
         uses: actions/setup-node@v2.1.0
@@ -171,8 +237,8 @@ jobs:
 
       - name: Deploy to Server
         uses: hengkx/ssh-deploy@v1.0.1
-        with:
-          USERNAME: ${{ secrets.DEPLOY_USER }}
+        with: # 以下为参数
+          USERNAME: ${{ secrets.DEPLOY_USER }} # 为了用户信息安全对敏感数据可以在secrets中配置请看下图
           PASSWORD: ${{ secrets.DEPLOY_PASSWORD }}
           HOST: ${{ secrets.DEPLOY_HOST }}
           SOURCE: 'dist'
@@ -180,7 +246,11 @@ jobs:
           AFTER_COMMAND: 'npm run stop && npm install --production && npm run start'
 ```
 
-运行效果图
-![运行效果图](images/2.png)
+![secrets](images/secrets.png)
 
 [源码地址](https://github.com/hengkx/ssh-deploy)
+
+## 参考链接
+
+- [GitHub Actions 官方文档](https://docs.github.com/en/actions)
+- [GitHub Actions 入门教程](http://www.ruanyifeng.com/blog/2019/09/getting-started-with-github-actions.html)
